@@ -2,6 +2,8 @@
   "name": "smart-task-analytics-manager",
   "version": "0.1.0",
   "description": "Smart Task & Analytics Manager — production-grade backend API showcasing clean layered architecture, strict typing, and full test coverage.",
+  "license": "MIT",
+  "author": "David Helcl",
   "type": "module",
   "engines": {
     "node": ">=20.0.0"

@@ -273,4 +273,4 @@ A few choices worth being able to defend, condensed:
 
 ## License
 
-MIT
+[MIT](LICENSE) © David Helcl
