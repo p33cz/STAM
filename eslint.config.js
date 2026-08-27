@@ -44,6 +44,13 @@ export default defineConfig(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
+      // Fastify's `.inject().json()` and vitest-mock-extended's proxies are
+      // typed `any` by design; fighting that in test assertions adds noise
+      // without catching real bugs.
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
   prettierConfig,
