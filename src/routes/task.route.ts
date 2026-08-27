@@ -1,12 +1,19 @@
 import { type FastifyInstance } from 'fastify';
 import { type ZodTypeProvider } from 'fastify-type-provider-zod';
 
-import { createTaskHandler } from '../controllers/task.controller.js';
-import { createTaskSchema, taskResponseSchema } from '../schemas/task.schema.js';
+import { createTaskHandler, listTasksHandler } from '../controllers/task.controller.js';
+import {
+  createTaskSchema,
+  listTasksQuerySchema,
+  paginatedTasksResponseSchema,
+  taskResponseSchema,
+} from '../schemas/task.schema.js';
 
 // eslint-disable-next-line @typescript-eslint/require-await -- Fastify route/plugin signatures are async by convention
 export async function taskRoutes(app: FastifyInstance): Promise<void> {
-  app.withTypeProvider<ZodTypeProvider>().post(
+  const server = app.withTypeProvider<ZodTypeProvider>();
+
+  server.post(
     '/tasks',
     {
       schema: {
@@ -17,5 +24,18 @@ export async function taskRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     createTaskHandler,
+  );
+
+  server.get(
+    '/tasks',
+    {
+      schema: {
+        querystring: listTasksQuerySchema,
+        response: {
+          200: paginatedTasksResponseSchema,
+        },
+      },
+    },
+    listTasksHandler,
   );
 }

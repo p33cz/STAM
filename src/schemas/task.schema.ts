@@ -35,3 +35,28 @@ export const taskResponseSchema = z.object({
 });
 
 export type TaskResponse = z.infer<typeof taskResponseSchema>;
+
+/**
+ * Querystring for GET /tasks. `page`/`pageSize` use z.coerce because
+ * querystring values always arrive as strings.
+ */
+export const listTasksQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  status: taskStatusSchema.optional(),
+  priority: taskPrioritySchema.optional(),
+});
+
+export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;
+
+export const paginatedTasksResponseSchema = z.object({
+  data: z.array(taskResponseSchema),
+  meta: z.object({
+    page: z.number(),
+    pageSize: z.number(),
+    total: z.number(),
+    totalPages: z.number(),
+  }),
+});
+
+export type PaginatedTasksResponse = z.infer<typeof paginatedTasksResponseSchema>;
