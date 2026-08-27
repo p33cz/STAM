@@ -3,6 +3,7 @@ import { config } from 'dotenv';
 
 import { buildApp } from './app.js';
 import { loadEnv } from './config/env.js';
+import { prisma } from './config/prisma.js';
 
 config();
 
@@ -15,6 +16,7 @@ async function main(): Promise<void> {
       app.log.error({ err }, 'closing app due to error');
     }
     await app.close();
+    await prisma.$disconnect();
   });
 
   await app.listen({ port: env.PORT, host: env.HOST });
