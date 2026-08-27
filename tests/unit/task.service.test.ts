@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { type TaskRepository } from '../../src/repositories/task.repository.js';
 import { type CreateTaskInput, type ListTasksQuery } from '../../src/schemas/task.schema.js';
 import { createTaskService, type TaskService } from '../../src/services/task.service.js';
+import { NotFoundError } from '../../src/utils/errors.js';
 
 function buildInput(overrides: Partial<CreateTaskInput> = {}): CreateTaskInput {
   return {
@@ -107,6 +108,69 @@ describe('taskService', () => {
       const result = await service.listTasks(buildQuery());
 
       expect(result.totalPages).toBe(0);
+    });
+  });
+
+  describe('getTaskById', () => {
+    it('returns the task when the repository finds one', async () => {
+      const task = { id: 'task-1' } as Task;
+      repository.findById.mockResolvedValue(task);
+
+      await expect(service.getTaskById('task-1')).resolves.toBe(task);
+    });
+
+    it('throws NotFoundError when the repository finds nothing', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(service.getTaskById('missing-id')).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('updateTask', () => {
+    it('only forwards fields that were actually provided', async () => {
+      repository.update.mockResolvedValue({} as Task);
+
+      await service.updateTask('task-1', { status: 'DONE' });
+
+      expect(repository.update).toHaveBeenCalledWith('task-1', { status: 'DONE' });
+    });
+
+    it('forwards an explicit null to clear description/dueDate, distinct from omitting the field', async () => {
+      repository.update.mockResolvedValue({} as Task);
+
+      await service.updateTask('task-1', {
+        description: null,
+        dueDate: null,
+      });
+
+      expect(repository.update).toHaveBeenCalledWith('task-1', {
+        description: null,
+        dueDate: null,
+      });
+    });
+
+    it('propagates NotFoundError raised by the repository', async () => {
+      repository.update.mockRejectedValue(new NotFoundError('Task task-1 not found'));
+
+      await expect(service.updateTask('task-1', { title: 'New title' })).rejects.toThrow(
+        NotFoundError,
+      );
+    });
+  });
+
+  describe('deleteTask', () => {
+    it('delegates to the repository', async () => {
+      repository.delete.mockResolvedValue(undefined);
+
+      await service.deleteTask('task-1');
+
+      expect(repository.delete).toHaveBeenCalledWith('task-1');
+    });
+
+    it('propagates NotFoundError raised by the repository', async () => {
+      repository.delete.mockRejectedValue(new NotFoundError('Task task-1 not found'));
+
+      await expect(service.deleteTask('task-1')).rejects.toThrow(NotFoundError);
     });
   });
 });

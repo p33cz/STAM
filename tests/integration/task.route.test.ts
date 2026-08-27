@@ -148,6 +148,118 @@ describe('Task routes', () => {
     });
   });
 
+  describe('GET /tasks/:id', () => {
+    it('returns the task when it exists', async () => {
+      const task = await prisma.task.create({ data: { title: 'Read a book' } });
+
+      const response = await app.inject({ method: 'GET', url: `/tasks/${task.id}` });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({ id: task.id, title: 'Read a book' });
+    });
+
+    it('returns a structured 404 for a well-formed but unknown id', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/tasks/00000000-0000-0000-0000-000000000000',
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json()).toMatchObject({ error: { code: 'NOT_FOUND' } });
+    });
+
+    it('rejects a malformed id as a validation error', async () => {
+      const response = await app.inject({ method: 'GET', url: '/tasks/not-a-uuid' });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error.code).toBe('VALIDATION_ERROR');
+    });
+  });
+
+  describe('PATCH /tasks/:id', () => {
+    it('updates only the provided fields', async () => {
+      const task = await prisma.task.create({
+        data: { title: 'Draft proposal', priority: 'LOW' },
+      });
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/tasks/${task.id}`,
+        payload: { status: 'IN_PROGRESS' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({
+        title: 'Draft proposal',
+        priority: 'LOW',
+        status: 'IN_PROGRESS',
+      });
+    });
+
+    it('clears description when explicitly set to null', async () => {
+      const task = await prisma.task.create({
+        data: { title: 'Draft proposal', description: 'v1' },
+      });
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/tasks/${task.id}`,
+        payload: { description: null },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().description).toBeNull();
+    });
+
+    it('rejects an empty patch body', async () => {
+      const task = await prisma.task.create({ data: { title: 'Draft proposal' } });
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/tasks/${task.id}`,
+        payload: {},
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('returns a structured 404 when the task does not exist', async () => {
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/tasks/00000000-0000-0000-0000-000000000000',
+        payload: { status: 'DONE' },
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json()).toMatchObject({ error: { code: 'NOT_FOUND' } });
+    });
+  });
+
+  describe('DELETE /tasks/:id', () => {
+    it('deletes the task and returns 204', async () => {
+      const task = await prisma.task.create({ data: { title: 'Old task' } });
+
+      const response = await app.inject({ method: 'DELETE', url: `/tasks/${task.id}` });
+
+      expect(response.statusCode).toBe(204);
+      expect(response.body).toBe('');
+
+      const stored = await prisma.task.findUnique({ where: { id: task.id } });
+      expect(stored).toBeNull();
+    });
+
+    it('returns a structured 404 when the task does not exist', async () => {
+      const response = await app.inject({
+        method: 'DELETE',
+        url: '/tasks/00000000-0000-0000-0000-000000000000',
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json()).toMatchObject({ error: { code: 'NOT_FOUND' } });
+    });
+  });
+
   it('returns a structured 404 for an unknown route', async () => {
     const response = await app.inject({ method: 'GET', url: '/does-not-exist' });
 

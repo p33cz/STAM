@@ -6,7 +6,7 @@ export const taskPrioritySchema = z.enum(['LOW', 'MEDIUM', 'HIGH']);
 /**
  * Request body for POST /tasks.
  * `status` is intentionally not accepted here — every task starts as TODO;
- * transitioning status is a separate concern (a future PATCH endpoint).
+ * transitioning status happens through PATCH /tasks/:id instead.
  */
 export const createTaskSchema = z.object({
   title: z.string().trim().min(1, 'Title must not be empty').max(200),
@@ -60,3 +60,31 @@ export const paginatedTasksResponseSchema = z.object({
 });
 
 export type PaginatedTasksResponse = z.infer<typeof paginatedTasksResponseSchema>;
+
+/** Path params shared by GET/PATCH/DELETE /tasks/:id. */
+export const taskIdParamsSchema = z.object({
+  id: z.uuid('id must be a valid UUID'),
+});
+
+export type TaskIdParams = z.infer<typeof taskIdParamsSchema>;
+
+/**
+ * Request body for PATCH /tasks/:id. Every field is optional (partial
+ * update), but at least one must be present — an empty patch is almost
+ * certainly a client bug, not a valid "no-op" request.
+ * `description`/`dueDate` accept `null` explicitly so a client can clear
+ * them, distinct from omitting the key (leave unchanged).
+ */
+export const updateTaskSchema = z
+  .object({
+    title: z.string().trim().min(1, 'Title must not be empty').max(200).optional(),
+    description: z.string().trim().max(2000).nullable().optional(),
+    status: taskStatusSchema.optional(),
+    priority: taskPrioritySchema.optional(),
+    dueDate: z.coerce.date().nullable().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided',
+  });
+
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;

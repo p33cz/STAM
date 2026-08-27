@@ -1,6 +1,11 @@
 import { type FastifyReply, type FastifyRequest } from 'fastify';
 
-import { type CreateTaskInput, type ListTasksQuery } from '../schemas/task.schema.js';
+import {
+  type CreateTaskInput,
+  type ListTasksQuery,
+  type TaskIdParams,
+  type UpdateTaskInput,
+} from '../schemas/task.schema.js';
 import { taskService } from '../services/task.service.js';
 
 /**
@@ -26,4 +31,28 @@ export async function listTasksHandler(
     data: items,
     meta: { page, pageSize, total, totalPages },
   });
+}
+
+export async function getTaskHandler(
+  request: FastifyRequest<{ Params: TaskIdParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const task = await taskService.getTaskById(request.params.id);
+  await reply.send(task);
+}
+
+export async function updateTaskHandler(
+  request: FastifyRequest<{ Params: TaskIdParams; Body: UpdateTaskInput }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const task = await taskService.updateTask(request.params.id, request.body);
+  await reply.send(task);
+}
+
+export async function deleteTaskHandler(
+  request: FastifyRequest<{ Params: TaskIdParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  await taskService.deleteTask(request.params.id);
+  await reply.code(204).send();
 }
